@@ -8,18 +8,18 @@ class AnimatedMarkerLayer<T> extends ImplicitlyAnimatedWidget {
   final MapState map;
   final Stream<T>? stream;
   final Duration duration;
-  final Curve curves;
+  final Curve curve;
   const AnimatedMarkerLayer({
     Key? key,
     required this.options,
     required this.map,
     this.stream,
     this.duration = const Duration(milliseconds: 300),
-    this.curves = Curves.linear,
+    this.curve = Curves.linear,
   }) : super(
           key: key,
           duration: duration,
-          curve: curves,
+          curve: curve,
         );
 
   @override
@@ -86,24 +86,23 @@ class _AnimatedMarkerLayerState
 class AnimatedMarkerLayerWidget<T> extends StatelessWidget {
   final AnimatedMarkerLayerOptions<T> options;
   final Duration duration;
-  final Curve curves;
+  final Curve curve;
   const AnimatedMarkerLayerWidget({
     Key? key,
     required this.options,
-    required this.duration,
-    required this.curves,
+    this.duration = const Duration(milliseconds: 300),
+    this.curve = Curves.linear,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final mapState = MapState.maybeOf(context)!;
-
     return AnimatedMarkerLayer(
       options: options,
       map: mapState,
       stream: mapState.onMoved,
       duration: duration,
-      curves: curves,
+      curve: curve,
     );
   }
 }
