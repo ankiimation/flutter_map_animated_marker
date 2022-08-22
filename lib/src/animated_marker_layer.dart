@@ -1,25 +1,23 @@
+import 'package:dart_exporter_annotation/dart_exporter_annotation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:flutter_map_animated_marker/src/animated_marker_layer_options.dart';
 import 'package:latlong2/latlong.dart';
 
+@doNotExport
 class AnimatedMarkerLayer<T> extends ImplicitlyAnimatedWidget {
   final AnimatedMarkerLayerOptions<T> options;
   final MapState map;
   final Stream<T>? stream;
-  final Duration duration;
-  final Curve curve;
-  const AnimatedMarkerLayer({
+  AnimatedMarkerLayer({
     Key? key,
     required this.options,
     required this.map,
     this.stream,
-    this.duration = const Duration(milliseconds: 300),
-    this.curve = Curves.linear,
   }) : super(
           key: key,
-          duration: duration,
-          curve: curve,
+          duration: options.duration,
+          curve: options.curve,
         );
 
   @override
@@ -49,33 +47,46 @@ class _AnimatedMarkerLayerState
   }
 
   @override
+  void didUpdateWidget(covariant AnimatedMarkerLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
-    final pxPoint = widget.map.project(LatLng(latitude, longitude));
-    final width = marker.width - marker.anchor.left;
-    final height = marker.height - marker.anchor.top;
-    var sw = CustomPoint(pxPoint.x + width, pxPoint.y - height);
-    var ne = CustomPoint(pxPoint.x - width, pxPoint.y + height);
-    if (!widget.map.pixelBounds.containsPartialBounds(Bounds(sw, ne))) {
-      return const SizedBox();
-    }
-    final pos = pxPoint - widget.map.getPixelOrigin();
-    final markerWidget = (marker.rotate ?? widget.options.rotate ?? false)
-        // Counter rotated marker to the map rotation
-        ? Transform.rotate(
-            angle: -widget.map.rotationRad,
-            origin: marker.rotateOrigin ?? widget.options.rotateOrigin,
-            alignment: marker.rotateAlignment ?? widget.options.rotateAlignment,
-            child: marker.builder(context),
-          )
-        : marker.builder(context);
-    return Positioned(
-      key: marker.key,
-      width: marker.width,
-      height: marker.height,
-      left: pos.x - width,
-      top: pos.y - height,
-      child: markerWidget,
+
+    return StreamBuilder(
+      stream: widget.stream,
+      builder: (context, snapshot) {
+        final pxPoint = widget.map.project(LatLng(latitude, longitude));
+        final width = marker.width - marker.anchor.left;
+        final height = marker.height - marker.anchor.top;
+        var sw = CustomPoint(pxPoint.x + width, pxPoint.y - height);
+        var ne = CustomPoint(pxPoint.x - width, pxPoint.y + height);
+        if (!widget.map.pixelBounds.containsPartialBounds(Bounds(sw, ne))) {
+          return const SizedBox();
+        }
+        final pos = pxPoint - widget.map.getPixelOrigin();
+        final markerWidget = (marker.rotate ?? widget.options.rotate ?? false)
+            // Counter rotated marker to the map rotation
+            ? Transform.rotate(
+                angle: -widget.map.rotationRad,
+                origin: marker.rotateOrigin ?? widget.options.rotateOrigin,
+                alignment:
+                    marker.rotateAlignment ?? widget.options.rotateAlignment,
+                child: marker.builder(context),
+              )
+            : marker.builder(context);
+        return Positioned(
+          key: marker.key,
+          width: marker.width,
+          height: marker.height,
+          left: pos.x - width,
+          top: pos.y - height,
+          child: markerWidget,
+        );
+      },
     );
   }
 
@@ -101,8 +112,6 @@ class AnimatedMarkerLayerWidget<T> extends StatelessWidget {
       options: options,
       map: mapState,
       stream: mapState.onMoved,
-      duration: duration,
-      curve: curve,
     );
   }
 }

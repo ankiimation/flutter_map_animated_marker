@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:math';
 
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animated_marker/flutter_map_animated_marker.dart';
+import 'package:geodesy/geodesy.dart' as geodesy;
 import 'package:latlong2/latlong.dart';
+import 'package:location/location.dart';
+import 'package:rxdart/subjects.dart';
 
 void main() {
   runApp(MyApp());
@@ -43,60 +47,124 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
-  final StreamController<LatLng> currentPointStreamController =
-      StreamController.broadcast();
-
+  final Location location = new Location();
+  final geodesy.Geodesy _geodesy = geodesy.Geodesy();
+  final BehaviorSubject<LocationData> locationSC = BehaviorSubject();
   late final AnimatedMapController mapController =
       AnimatedMapController(vsync: this);
 
-  late final routePoints = MapboxRouteService.decode(geometry)
-      .map((e) => LatLng(e[0].toDouble(), e[1].toDouble()))
-      .toList();
-  int index = 0;
+  LocationData? lastFix;
+  int duration = 0;
+  double distance = 0;
+
+  Future<void> initLocation() async {
+    bool _serviceEnabled;
+    PermissionStatus _permissionGranted;
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+    location.getLocation().then((value) {
+      locationSC.add(value);
+    });
+    location.onLocationChanged.listen((event) {
+      locationSC.add(event);
+    });
+  }
 
   @override
   void initState() {
+    initLocation();
     super.initState();
-    Timer.periodic(Duration(milliseconds: 300), (timer) {
-      if (index < routePoints.length - 1) {
-        index++;
-      } else {
-        index = 0;
-      }
-      currentPointStreamController.add(routePoints[index]);
+    locationSC.stream.listen((event) {
+      duration = ((event.time ?? 0) - (lastFix?.time ?? 0)).toInt();
+      distance = _geodesy
+          .distanceBetweenTwoGeoPoints(
+            geodesy.LatLng(event.latitude ?? 0, event.longitude ?? 0),
+            geodesy.LatLng(lastFix?.latitude ?? 0, lastFix?.longitude ?? 0),
+          )
+          .toDouble();
+      lastFix = event;
+
+      mapController.animatedTo(
+        LatLng(lastFix?.latitude ?? 0, lastFix?.longitude ?? 0),
+        destZoom: 16,
+        destBearing: -(max(0, lastFix?.heading ?? 0).toDouble()),
+        duration: Duration(
+          milliseconds: duration,
+        ),
+      );
     });
   }
 
   @override
   void dispose() {
-    currentPointStreamController.close();
+    locationSC.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-          center: LatLng(51.509364, -0.128928),
-          zoom: 9.2,
-          plugins: [AnimatedMarkerPlugin()]),
-      children: [
-        TileLayerWidget(
-          options: TileLayerOptions(
-            urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-          ),
-        ),
-        AnimatedMarkerLayerWidget(
-          options: AnimatedMarkerLayerOptions(
-            marker: Marker(
-              point: LatLng(0, 0),
-              builder: (context) => FlutterLogo(),
+    return StreamBuilder<LocationData>(
+        stream: locationSC.stream,
+        builder: (context, snapshot) {
+          final locationData = snapshot.data;
+          final nextSimulateLocation =
+              _geodesy.destinationPointByDistanceAndBearing(
+            geodesy.LatLng(
+              locationData?.latitude ?? 0.0,
+              locationData?.longitude ?? 0.0,
             ),
-          ),
-        ),
-      ],
-    );
+            distance,
+            locationData?.heading ?? 0.0,
+          );
+          return FlutterMap(
+            mapController: mapController,
+            options: MapOptions(
+                center: LatLng(51.509364, -0.128928),
+                zoom: 9.2,
+                plugins: [AnimatedMarkerPlugin()]),
+            layers: [
+              TileLayerOptions(
+                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+              ),
+              if (locationData != null) ...[
+                AnimatedMarkerLayerOptions(
+                  duration: Duration(
+                    milliseconds: duration,
+                  ),
+                  marker: Marker(
+                    width: 30,
+                    height: 30,
+                    point: LatLng(
+                      nextSimulateLocation.latitude,
+                      nextSimulateLocation.longitude,
+                    ),
+                    builder: (context) => Center(
+                      child: Transform.rotate(
+                        angle: max(0, locationData.heading ?? 0) * pi / 180,
+                        child: Image.asset(
+                          'lib/assets/puck.png',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        });
   }
 }
 

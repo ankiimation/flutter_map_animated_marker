@@ -1,6 +1,6 @@
 name: flutter_map_animated_marker
 description: Animated marker for flutter_mapp
-version: 0.0.1
+version: 0.0.4
 homepage: https://github.com/ankiimation/flutter_map_animated_marker
 
 environment:
@@ -8,9 +8,10 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  dart_exporter_annotation: ^1.0.1
   flutter:
     sdk: flutter
-  flutter_map: ^0.14.0
+  flutter_map: ^2.2.0
   latlong2: ^0.8.1
 
 dev_dependencies:

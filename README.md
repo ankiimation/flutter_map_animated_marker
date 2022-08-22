@@ -1,6 +1,8 @@
 # flutter_map_animated_marker
 Animated Marker for flutter_map
 
+![preview](https://i.imgur.com/gRe67be.gif)
+
 
 ## Features
 
@@ -22,20 +24,16 @@ return FlutterMap(
           center: LatLng(51.509364, -0.128928),
           zoom: 9.2,
           plugins: [AnimatedMarkerPlugin()]),
-      children: [
-        TileLayerWidget(
-          options: TileLayerOptions(
+      layers: [
+        TileLayerOptions(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
           ),
-        ),
-        AnimatedMarkerLayerWidget(
-          options: AnimatedMarkerLayerOptions(
+        AnimatedMarkerLayerOptions(
             marker: Marker(
               point: LatLng(0, 0),
               builder: (context) => FlutterLogo(),
             ),
           ),
-        ),
       ],
     );
 ```
