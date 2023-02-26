@@ -1,3 +1,7 @@
+## 1.0.0
+
+* PUMP flutter_map to 3.0.0
+
 ## 0.0.4
 
 * UPGRADE PACKAGES

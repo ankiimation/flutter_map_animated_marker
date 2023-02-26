@@ -4,16 +4,12 @@ import 'package:flutter_map/plugin_api.dart';
 import 'package:flutter_map_animated_marker/src/animated_marker_layer_options.dart';
 import 'package:latlong2/latlong.dart';
 
-@doNotExport
+@Export()
 class AnimatedMarkerLayer<T> extends ImplicitlyAnimatedWidget {
   final AnimatedMarkerLayerOptions<T> options;
-  final MapState map;
-  final Stream<T>? stream;
   AnimatedMarkerLayer({
     Key? key,
     required this.options,
-    required this.map,
-    this.stream,
   }) : super(
           key: key,
           duration: options.duration,
@@ -55,63 +51,35 @@ class _AnimatedMarkerLayerState
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
-    return StreamBuilder(
-      stream: widget.stream,
-      builder: (context, snapshot) {
-        final pxPoint = widget.map.project(LatLng(latitude, longitude));
-        final width = marker.width - marker.anchor.left;
-        final height = marker.height - marker.anchor.top;
-        var sw = CustomPoint(pxPoint.x + width, pxPoint.y - height);
-        var ne = CustomPoint(pxPoint.x - width, pxPoint.y + height);
-        if (!widget.map.pixelBounds.containsPartialBounds(Bounds(sw, ne))) {
-          return const SizedBox();
-        }
-        final pos = pxPoint - widget.map.getPixelOrigin();
-        final markerWidget = (marker.rotate ?? widget.options.rotate ?? false)
-            // Counter rotated marker to the map rotation
-            ? Transform.rotate(
-                angle: -widget.map.rotationRad,
-                origin: marker.rotateOrigin ?? widget.options.rotateOrigin,
-                alignment:
-                    marker.rotateAlignment ?? widget.options.rotateAlignment,
-                child: marker.builder(context),
-              )
-            : marker.builder(context);
-        return Positioned(
-          key: marker.key,
-          width: marker.width,
-          height: marker.height,
-          left: pos.x - width,
-          top: pos.y - height,
-          child: markerWidget,
-        );
-      },
+    final map = FlutterMapState.maybeOf(context)!;
+    final pxPoint = map.project(LatLng(latitude, longitude));
+    final width = marker.width - marker.anchor.left;
+    final height = marker.height - marker.anchor.top;
+    var sw = CustomPoint(pxPoint.x + width, pxPoint.y - height);
+    var ne = CustomPoint(pxPoint.x - width, pxPoint.y + height);
+    if (!map.pixelBounds.containsPartialBounds(Bounds(sw, ne))) {
+      return const SizedBox();
+    }
+    final pos = pxPoint - map.pixelOrigin;
+    final markerWidget = (marker.rotate ?? widget.options.rotate ?? false)
+        // Counter rotated marker to the map rotation
+        ? Transform.rotate(
+            angle: -map.rotationRad,
+            origin: marker.rotateOrigin ?? widget.options.rotateOrigin,
+            alignment: marker.rotateAlignment ?? widget.options.rotateAlignment,
+            child: marker.builder(context),
+          )
+        : marker.builder(context);
+    return Positioned(
+      key: marker.key,
+      width: marker.width,
+      height: marker.height,
+      left: pos.x - width,
+      top: pos.y - height,
+      child: markerWidget,
     );
   }
 
   @override
   bool get wantKeepAlive => true;
-}
-
-class AnimatedMarkerLayerWidget<T> extends StatelessWidget {
-  final AnimatedMarkerLayerOptions<T> options;
-  final Duration duration;
-  final Curve curve;
-  const AnimatedMarkerLayerWidget({
-    Key? key,
-    required this.options,
-    this.duration = const Duration(milliseconds: 300),
-    this.curve = Curves.linear,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final mapState = MapState.maybeOf(context)!;
-    return AnimatedMarkerLayer(
-      options: options,
-      map: mapState,
-      stream: mapState.onMoved,
-    );
-  }
 }

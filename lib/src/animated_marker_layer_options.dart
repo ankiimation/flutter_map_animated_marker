@@ -1,7 +1,9 @@
+import 'package:dart_exporter_annotation/dart_exporter_annotation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
-class AnimatedMarkerLayerOptions<T> extends LayerOptions {
+@Export()
+class AnimatedMarkerLayerOptions<T> {
   final Duration duration;
   final Curve curve;
   final Marker marker;

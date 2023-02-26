@@ -50,8 +50,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final Location location = new Location();
   final geodesy.Geodesy _geodesy = geodesy.Geodesy();
   final BehaviorSubject<LocationData> locationSC = BehaviorSubject();
-  late final AnimatedMapController mapController =
-      AnimatedMapController(vsync: this);
+  final mapController = MapController();
 
   LocationData? lastFix;
   int duration = 0;
@@ -97,13 +96,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           .toDouble();
       lastFix = event;
 
-      mapController.animatedTo(
+      mapController.move(
         LatLng(lastFix?.latitude ?? 0, lastFix?.longitude ?? 0),
-        destZoom: 16,
-        destBearing: -(max(0, lastFix?.heading ?? 0).toDouble()),
-        duration: Duration(
-          milliseconds: duration,
-        ),
+        16,
       );
     });
   }
@@ -132,36 +127,37 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           return FlutterMap(
             mapController: mapController,
             options: MapOptions(
-                center: LatLng(51.509364, -0.128928),
-                zoom: 9.2,
-                plugins: [AnimatedMarkerPlugin()]),
-            layers: [
-              TileLayerOptions(
-                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+              center: LatLng(51.509364, -0.128928),
+              zoom: 9.2,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               ),
-              if (locationData != null) ...[
-                AnimatedMarkerLayerOptions(
-                  duration: Duration(
-                    milliseconds: duration,
-                  ),
-                  marker: Marker(
-                    width: 30,
-                    height: 30,
-                    point: LatLng(
-                      nextSimulateLocation.latitude,
-                      nextSimulateLocation.longitude,
+              if (locationData != null)
+                AnimatedMarkerLayer(
+                  options: AnimatedMarkerLayerOptions(
+                    duration: Duration(
+                      milliseconds: duration,
                     ),
-                    builder: (context) => Center(
-                      child: Transform.rotate(
-                        angle: max(0, locationData.heading ?? 0) * pi / 180,
-                        child: Image.asset(
-                          'lib/assets/puck.png',
+                    marker: Marker(
+                      width: 30,
+                      height: 30,
+                      point: LatLng(
+                        nextSimulateLocation.latitude,
+                        nextSimulateLocation.longitude,
+                      ),
+                      builder: (context) => Center(
+                        child: Transform.rotate(
+                          angle: max(0, locationData.heading ?? 0) * pi / 180,
+                          child: Image.asset(
+                            'lib/assets/puck.png',
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
             ],
           );
         });
