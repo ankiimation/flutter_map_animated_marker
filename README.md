@@ -19,21 +19,39 @@ dependencies:
 
 ```dart
 return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-          center: LatLng(51.509364, -0.128928),
-          zoom: 9.2,
-          plugins: [AnimatedMarkerPlugin()]),
-      layers: [
-        TileLayerOptions(
-            urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-          ),
-        AnimatedMarkerLayerOptions(
-            marker: Marker(
-              point: LatLng(0, 0),
-              builder: (context) => FlutterLogo(),
+            mapController: mapController,
+            options: MapOptions(
+              center: LatLng(51.509364, -0.128928),
+              zoom: 9.2,
             ),
-          ),
-      ],
-    );
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              ),
+              if (locationData != null)
+                AnimatedMarkerLayer(
+                  options: AnimatedMarkerLayerOptions(
+                    duration: Duration(
+                      milliseconds: duration,
+                    ),
+                    marker: Marker(
+                      width: 30,
+                      height: 30,
+                      point: LatLng(
+                        nextSimulateLocation.latitude,
+                        nextSimulateLocation.longitude,
+                      ),
+                      builder: (context) => Center(
+                        child: Transform.rotate(
+                          angle: max(0, locationData.heading ?? 0) * pi / 180,
+                          child: Image.asset(
+                            'lib/assets/puck.png',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
 ```
