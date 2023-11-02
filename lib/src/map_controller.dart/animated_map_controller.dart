@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
+import 'package:flutter_map_animated_marker/src/map_controller.dart/map_controller_implementation.dart';
+
 import 'package:latlong2/latlong.dart';
 
-class AnimatedMapController extends MapControllerImpl {
+class AnimatedMapController extends MapControllerImplementation {
   final TickerProvider vsync;
   AnimatedMapController({
     required this.vsync,
@@ -30,6 +32,7 @@ class AnimatedMapController extends MapControllerImpl {
       try {
         _animationController.dispose();
       } catch (e) {}
+      
       _animationController =
           AnimationController(duration: duration, vsync: vsync);
       final Animation<double> animation =
@@ -51,6 +54,7 @@ class AnimatedMapController extends MapControllerImpl {
           _animationController.dispose();
         }
       });
+
       _animationController.forward();
     } catch (e) {}
   }
