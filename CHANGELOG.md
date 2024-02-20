@@ -1,3 +1,7 @@
+## 2.0.0
+
+* PUMP flutter_map to 6.1.0
+
 ## 1.0.1
 
 * Update document

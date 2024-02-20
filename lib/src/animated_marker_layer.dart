@@ -1,6 +1,8 @@
+import 'dart:math';
+
 import 'package:dart_exporter_annotation/dart_exporter_annotation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/plugin_api.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animated_marker/src/animated_marker_layer_options.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -51,33 +53,44 @@ class _AnimatedMarkerLayerState
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final map = FlutterMapState.maybeOf(context)!;
+    final map = MapCamera.of(context);
+
     final pxPoint = map.project(LatLng(latitude, longitude));
     final width = marker.width;
     final height = marker.height;
-    var sw = CustomPoint(pxPoint.x + width, pxPoint.y - height);
-    var ne = CustomPoint(pxPoint.x - width, pxPoint.y + height);
+    final left = 0.5 * marker.width * (((marker.alignment)?.x ?? 0) + 1);
+    final top = 0.5 * marker.height * (((marker.alignment)?.y ?? 0) + 1);
+    final right = width - left;
+    final bottom = height - top;
+
+    var sw = Point(pxPoint.x + width, pxPoint.y - height);
+    var ne = Point(pxPoint.x - width, pxPoint.y + height);
     if (!map.pixelBounds.containsPartialBounds(Bounds(sw, ne))) {
       return const SizedBox();
     }
-    final pos = pxPoint - map.pixelOrigin;
+    final pos = pxPoint.subtract(map.pixelOrigin);
     final markerWidget = (marker.rotate ?? widget.options.rotate ?? false)
         // Counter rotated marker to the map rotation
         ? Transform.rotate(
             angle: -map.rotationRad,
-            origin: marker.rotateOrigin ?? widget.options.rotateOrigin,
-            alignment: marker.rotateAlignment ?? widget.options.rotateAlignment,
-            child: marker.builder(context),
+            origin: widget.options.rotateOrigin,
+            alignment: widget.options.rotateAlignment,
+            child: marker.child,
           )
-        : marker.builder(context);
-    return Positioned(
-      key: marker.key,
-      width: marker.width,
-      height: marker.height,
-      left: pos.x - width,
-      top: pos.y - height,
-      child: markerWidget,
-    );
+        : marker.child;
+    return MobileLayerTransformer(
+        child: Stack(
+      children: [
+        Positioned(
+          key: marker.key,
+          width: marker.width,
+          height: marker.height,
+          left: pos.x - right,
+          top: pos.y - bottom,
+          child: markerWidget,
+        )
+      ],
+    ));
   }
 
   @override

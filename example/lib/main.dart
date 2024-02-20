@@ -143,11 +143,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     marker: Marker(
                       width: 30,
                       height: 30,
+                      alignment: Alignment.center,
                       point: LatLng(
                         nextSimulateLocation.latitude,
                         nextSimulateLocation.longitude,
                       ),
-                      builder: (context) => Center(
+                      child: Center(
                         child: Transform.rotate(
                           angle: max(0, locationData.heading ?? 0) * pi / 180,
                           child: Image.asset(
